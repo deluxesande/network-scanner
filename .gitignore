@@ -1,2 +1,3 @@
 # Ignore the results.json file
 results.json
+*.json
