@@ -267,4 +267,26 @@ func main() {
 
 	// Export to JSON
 	exportToJSON(devices, "results.json")
+
+	for {
+		fmt.Println("\nWhat would you like to do next?")
+		fmt.Println("  [1] Rerun the scanner")
+		fmt.Println("  [2] Exit the program")
+		fmt.Print("Enter your choice: ")
+
+		reader := bufio.NewReader(os.Stdin)
+		choice, _ := reader.ReadString('\n')
+		choice = strings.TrimSpace(choice)
+
+		switch choice {
+		case "1":
+			main() // Rerun the scanner
+			return
+		case "2":
+			color.Green("👋 Exiting the program. Goodbye!")
+			return
+		default:
+			color.Red("❌ Invalid choice. Please try again.")
+		}
+	}
 }
