@@ -29,6 +29,8 @@ type Device struct {
 
 func getLocalSubnets() []string {
 	var subnets []string
+	subnetMap := make(map[string]bool) // To track unique subnets
+
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		fmt.Println("Error getting interfaces:", err)
@@ -44,10 +46,14 @@ func getLocalSubnets() []string {
 			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
 				ip := ipnet.IP.Mask(ipnet.Mask)
 				subnet := ip.String()
-				subnets = append(subnets, subnet)
+				if !subnetMap[subnet] { // Check if the subnet is already added
+					subnetMap[subnet] = true
+					subnets = append(subnets, subnet)
+				}
 			}
 		}
 	}
+
 	return subnets
 }
 
