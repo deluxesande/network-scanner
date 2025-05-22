@@ -124,3 +124,26 @@ Simply download the binary for your platform from the Release page and run it fr
 - The scanner pings IPs from `.1` to `.254` in the subnet.
 
 ---
+
+## Contributing
+
+Contributions are welcome! If you'd like to contribute to this project, please follow these steps:
+
+- Fork the repository.
+- Create a new branch for your feature or bug fix.
+- Commit your changes and push them to your fork.
+- Submit a pull request with a detailed description of your changes.
+
+For major changes, please open an issue first to discuss what you would like to change.
+
+---
+
+## Changelog
+
+All notable changes to this project will be documented in the `CHANGELOG.md` file. Please refer to it for details on updates, fixes, and new features.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for more details.
