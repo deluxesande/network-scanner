@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -89,8 +90,12 @@ func estimateOS(ttl string) string {
 	switch ttl {
 	case "32":
 		return "Windows 95/98/ME"
+	case "62":
+		return "Windows CE"
 	case "64":
 		return "Linux/macOS"
+	case "100":
+		return "Google Chrome OS"
 	case "128":
 		return "Windows"
 	case "255":
@@ -99,6 +104,8 @@ func estimateOS(ttl string) string {
 		return "FreeBSD"
 	case "200":
 		return "Solaris"
+	case "252":
+		return "IBM AIX"
 	default:
 		return "Unknown"
 	}
@@ -214,15 +221,116 @@ func exportToJSON(devices []Device, filename string) {
 	color.Cyan("📁 Results saved to %s\n", filename)
 }
 
+func displayCredits() {
+	color.Green(`                                                      
+	_                                           
+	____   ____| |_   ___  ____ ____ ____  ____   ____  ____ 
+   |  _ \ / _  )  _) /___)/ ___) _  |  _ \|  _ \ / _  )/ ___)
+   | | | ( (/ /| |__|___ ( (__( ( | | | | | | | ( (/ /| |    
+   |_| |_|\____)\___|___/ \____)_||_|_| |_|_| |_|\____)_|    														 
+   
+
+	Netscanner: Lightweight CLI tool to scan your local network for active devices,
+	detect operating systems via TTL, and export results to JSON.
+
+	Created by deluxesande
+	GitHub: https://github.com/deluxesande/net-scanner
+	`)
+}
+
+func displayHelp() {
+	color.Green(`Usage: netscanner [options]
+
+Options:
+  -h, --help          Show this help message and exit
+  -v, --version       Show version information and exit
+  -o, --output FILE   Specify output file for JSON results (default: results.json)
+  -s, --subnet SUBNET Specify a specific subnet to scan (e.g., 192.168.1.0/24)
+  -a, --all           Scan all detected subnets
+  -m, --mac           Include MAC address resolution in the scan
+  -t, --ttl           Display TTL values and estimated OS for each device
+  -c, --credits       Display program credits and exit
+
+Examples:
+  netscanner -o output.json
+  netscanner --subnet 192.168.1.0/24
+  netscanner -a -m -o devices.json
+  netscanner -t
+  `)
+}
+
+func printResults(devices []Device) {
+	fmt.Println("\n📋 Active Devices Found:")
+	fmt.Println("----------------------------------------------------------------------------------")
+	color.Set(color.FgHiYellow)
+	fmt.Printf("%-16s %-30s %-15s %-17s\n", "IP Address", "Hostname", "OS", "MAC Address")
+	color.Unset()
+	fmt.Println("----------------------------------------------------------------------------------")
+	for _, d := range devices {
+		fmt.Printf("%-16s %-30s %-15s %-17s\n", d.IP, d.Hostname, d.OS, d.MAC)
+	}
+	if len(devices) == 0 {
+		color.Red("❌ No devices found.")
+	}
+	fmt.Println("----------------------------------------------------------------------------------")
+	color.Green("✅ Done. %d device(s) detected.\n", len(devices))
+}
+
 func main() {
-	color.Cyan("🔍 Detecting local subnets...")
-	subnets := getLocalSubnets()
-	if len(subnets) == 0 {
-		color.Red("No subnets found.")
+	help := flag.Bool("h", false, "Show help message")
+	subnetFlag := flag.String("subnet", "", "Comma-separated list of subnets to scan (e.g., 192.168.1.0/24,10.0.0.0/24)")
+	credits := flag.Bool("c", false, "Show program credits")
+	output := flag.String("output", "", "Output file for JSON results")
+
+	// Define a map for aliases
+	aliases := map[string]*string{
+		"o": output,
+		"s": subnetFlag,
+	}
+
+	// Define short flags
+	var shortFlags = make(map[string]string)
+	for alias := range aliases {
+		shortFlags[alias] = ""
+		value := shortFlags[alias]
+		flag.StringVar(&value, alias, "", fmt.Sprintf("Alias for --%s", alias))
+		shortFlags[alias] = value
+	}
+
+	flag.Parse()
+
+	// Resolve aliases
+	for alias, target := range aliases {
+		if shortFlags[alias] != "" {
+			*target = shortFlags[alias]
+		}
+	}
+
+	var chosen []string
+
+	if *help {
+		displayHelp()
 		return
 	}
 
-	chosen := askSubnetChoice(subnets)
+	if *credits {
+		displayCredits()
+		return
+	}
+
+	// Determine subnets to scan
+	if *subnetFlag != "" {
+		color.Cyan("🔍 Using provided subnets...")
+		chosen = strings.Split(*subnetFlag, ",")
+	} else {
+		color.Cyan("🔍 Detecting local subnets...")
+		subnets := getLocalSubnets()
+		if len(subnets) == 0 {
+			color.Red("No subnets found.")
+			return
+		}
+		chosen = askSubnetChoice(subnets)
+	}
 
 	color.Green("\n🌐 Scanning selected subnet(s)...\n")
 	var wg sync.WaitGroup
@@ -253,23 +361,14 @@ func main() {
 	}
 
 	// Print results
-	fmt.Println("\n📋 Active Devices Found:")
-	fmt.Println("----------------------------------------------------------------------------------")
-	color.Set(color.FgHiYellow)
-	fmt.Printf("%-16s %-30s %-15s %-17s\n", "IP Address", "Hostname", "OS", "MAC Address")
-	color.Unset()
-	fmt.Println("----------------------------------------------------------------------------------")
-	for _, d := range devices {
-		fmt.Printf("%-16s %-30s %-15s %-17s\n", d.IP, d.Hostname, d.OS, d.MAC)
-	}
-	if len(devices) == 0 {
-		color.Red("❌ No devices found.")
-	}
-	fmt.Println("----------------------------------------------------------------------------------")
-	color.Green("✅ Done. %d device(s) detected.\n", len(devices))
+	printResults(devices)
 
-	// Export to JSON
-	exportToJSON(devices, "results.json")
+	if *output != "" {
+		exportToJSON(devices, *output)
+	} else {
+		// Export to JSON
+		exportToJSON(devices, "results.json")
+	}
 
 	// Prompt to exit
 	fmt.Println("\nPress Enter to exit the program.")
