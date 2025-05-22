@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -15,6 +16,7 @@ import (
 )
 
 const (
+	osName      = runtime.GOOS // "windows", "linux", or "darwin"
 	startIP     = 1
 	endIP       = 254
 	concurrency = 100
@@ -58,29 +60,28 @@ func getLocalSubnets() []string {
 }
 
 func pingWithTTL(ip string) (bool, string) {
-	cmd := exec.Command("ping", "-n", "1", "-w", "1000", ip) // Windows ping
+	var cmd *exec.Cmd
+	switch osName {
+	case "windows":
+		cmd = exec.Command("ping", "-n", "1", "-w", "1000", ip)
+	case "linux", "darwin":
+		cmd = exec.Command("ping", "-c", "1", "-W", "1", ip)
+	default:
+		return false, ""
+	}
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return false, ""
 	}
 	outStr := string(output)
-	if !strings.Contains(outStr, "Reply from") {
+
+	// For all OS, detect TTL using a regex
+	re := regexp.MustCompile(`TTL[=|:](\d+)`)
+	matches := re.FindStringSubmatch(outStr)
+	if len(matches) < 2 {
 		return false, ""
 	}
-
-	// Extract TTL
-	ttl := ""
-	lines := strings.Split(outStr, "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "TTL=") {
-			parts := strings.Split(line, "TTL=")
-			if len(parts) > 1 {
-				ttl = strings.TrimSpace(parts[1])
-			}
-			break
-		}
-	}
-
+	ttl := matches[1]
 	return true, estimateOS(ttl)
 }
 
@@ -161,7 +162,18 @@ func askSubnetChoice(subnets []string) []string {
 
 func getMacTable() map[string]string {
 	table := make(map[string]string)
-	cmd := exec.Command("arp", "-a")
+	var cmd *exec.Cmd
+
+	switch osName {
+	case "windows":
+		cmd = exec.Command("arp", "-a")
+	case "linux", "darwin":
+		cmd = exec.Command("arp", "-a")
+	default:
+		fmt.Println("Unsupported OS for ARP")
+		return table
+	}
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("Error fetching ARP table:", err)
@@ -169,11 +181,13 @@ func getMacTable() map[string]string {
 	}
 
 	lines := strings.Split(string(output), "\n")
-	re := regexp.MustCompile(`(?m)(\d+\.\d+\.\d+\.\d+)\s+([a-fA-F0-9\-]{17})`)
+
+	// Different output format parsing per OS
+	re := regexp.MustCompile(`(\d+\.\d+\.\d+\.\d+)\s+(([a-fA-F0-9]{2}[:-]){5}[a-fA-F0-9]{2})`)
 
 	for _, line := range lines {
 		matches := re.FindStringSubmatch(line)
-		if len(matches) == 3 {
+		if len(matches) >= 3 {
 			ip := strings.TrimSpace(matches[1])
 			mac := strings.ToUpper(strings.ReplaceAll(matches[2], "-", ":"))
 			table[ip] = mac
