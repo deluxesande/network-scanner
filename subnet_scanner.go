@@ -254,39 +254,46 @@ func main() {
 
 	// Print results
 	fmt.Println("\n📋 Active Devices Found:")
-	fmt.Println("-------------------------------------------------------------------")
+	fmt.Println("----------------------------------------------------------------------------------")
 	color.Set(color.FgHiYellow)
 	fmt.Printf("%-16s %-30s %-15s %-17s\n", "IP Address", "Hostname", "OS", "MAC Address")
 	color.Unset()
-	fmt.Println("-------------------------------------------------------------------")
+	fmt.Println("----------------------------------------------------------------------------------")
 	for _, d := range devices {
 		fmt.Printf("%-16s %-30s %-15s %-17s\n", d.IP, d.Hostname, d.OS, d.MAC)
 	}
-	fmt.Println("-------------------------------------------------------------------")
+	if len(devices) == 0 {
+		color.Red("❌ No devices found.")
+	}
+	fmt.Println("----------------------------------------------------------------------------------")
 	color.Green("✅ Done. %d device(s) detected.\n", len(devices))
 
 	// Export to JSON
 	exportToJSON(devices, "results.json")
 
-	for {
-		fmt.Println("\nWhat would you like to do next?")
-		fmt.Println("  [1] Rerun the scanner")
-		fmt.Println("  [2] Exit the program")
-		fmt.Print("Enter your choice: ")
+	// for {
+	// 	fmt.Println("\nWhat would you like to do next?")
+	// 	fmt.Println("  [1] Rerun the scanner")
+	// 	fmt.Println("  [2] Exit the program")
+	// 	fmt.Print("Enter your choice: ")
 
-		reader := bufio.NewReader(os.Stdin)
-		choice, _ := reader.ReadString('\n')
-		choice = strings.TrimSpace(choice)
+	// 	reader := bufio.NewReader(os.Stdin)
+	// 	choice, _ := reader.ReadString('\n')
+	// 	choice = strings.TrimSpace(choice)
 
-		switch choice {
-		case "1":
-			main() // Rerun the scanner
-			return
-		case "2":
-			color.Green("👋 Exiting the program. Goodbye!")
-			return
-		default:
-			color.Red("❌ Invalid choice. Please try again.")
-		}
-	}
+	// 	switch choice {
+	// 	case "1":
+	// 		main() // Rerun the scanner
+	// 		return
+	// 	case "2":
+	// 		color.Green("👋 Exiting the program. Goodbye!")
+	// 		return
+	// 	default:
+	// 		color.Red("❌ Invalid choice. Please try again.")
+	// 	}
+	// }
+
+	fmt.Println("\nPress Enter to exit the program.")
+	bufio.NewReader(os.Stdin).ReadString('\n')
+	fmt.Println("👋 Exiting the program. Goodbye!")
 }
