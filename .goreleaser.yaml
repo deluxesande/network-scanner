@@ -42,7 +42,7 @@ nfpms:
   - id: deb
     formats:
       - deb
-    maintainer: "Your Name <your-email@example.com>"
+    maintainer: "Deluxe Sande deluxesande@gmail.com"
     description: "A network scanner tool"
     license: MIT
     

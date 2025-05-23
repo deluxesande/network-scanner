@@ -22,7 +22,6 @@ Write-Host "Extracting netscanner..."
 Expand-Archive -Path "$installPath\netscanner.zip" -DestinationPath $installPath -Force
 
 # Rename the binary to 'netscanner.exe'
-Write-Host "Renaming binary to 'netscanner.exe'..."
 Rename-Item -Path "$installPath\network-scanner.exe" -NewName "netscanner.exe"
 
 # Add to PATH

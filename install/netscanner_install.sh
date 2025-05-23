@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Download and install netscanner on Linux
-version="v1.0.0"
+version="v0.2.0"
 os="linux"
 arch="amd64"
-url="https://github.com/deluxesande/network-scanner/releases/download/$version/netscanner_${version}_${os}_${arch}.tar.gz"
+url="https://github.com/deluxesande/network-scanner/releases/download/$version/netscanner_Linux_x86_64.tar.gz"
 install_path="$HOME/.local/bin"
 
 # Create installation directory
@@ -17,6 +17,9 @@ curl -L "$url" -o "/tmp/netscanner.tar.gz"
 # Extract the binary
 echo "Extracting netscanner..."
 tar -xzf "/tmp/netscanner.tar.gz" -C "$install_path"
+
+# Rename the binary from network-scanner to netscanner
+mv "$install_path/network-scanner" "$install_path/netscanner"
 
 # Add to PATH
 echo "Adding netscanner to PATH..."

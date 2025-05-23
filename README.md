@@ -174,6 +174,8 @@ Simply download the binary for your platform from the Release page and run it fr
 
 This section provides instructions on how to run the `netscanner` binary on different operating systems and how to install it system-wide using one-line commands. The commands are tailored for Windows, Linux, and macOS, ensuring that the `netscanner` binary is downloaded, executed, and added to the system's `PATH` for easy access.
 
+*The scripts accounts for x86_64 systems*
+
 ### Running the Binary
 - **Linux/macOS**: The binary can be executed directly using `./netscanner`.
 - **Windows**: The binary can be executed using `.\netscanner.exe` in PowerShell.
