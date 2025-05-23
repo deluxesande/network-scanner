@@ -54,6 +54,7 @@ func main() {
 	output := flag.String("output", "", "Output file for JSON results")
 	openTcp := flag.Bool("tcp", false, "Scan for open TCP ports (default: false)")
 	openUdp := flag.Bool("udp", false, "Scan for open UDP ports (default: false)")
+	version := flag.Bool("version", false, "Show version information")
 
 	flag.Parse()
 
@@ -66,6 +67,11 @@ func main() {
 
 	if *credits {
 		netscanner.DisplayCredits()
+		return
+	}
+
+	if *version {
+		netscanner.DisplayVersion()
 		return
 	}
 
