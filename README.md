@@ -61,7 +61,6 @@ A concurrent network scanner built with Go that detects active devices on your l
 The `netscanner` CLI tool provides a `--help` option (or `-h`) to display detailed usage instructions and examples. This is implemented using the `DisplayHelp` function, which outputs the following information:
 
 ### Usage
-<pre>
 Usage: netscanner [options]
 
 Options:
@@ -81,7 +80,7 @@ netscanner --tcp 192.168.1.10 80 100
 #### Scan a specific subnet and save results to a custom output file
 ```bash
 netscanner --subnet 192.168.1.0/24 --output output.json
-</pre>
+```
 
 ---
 
