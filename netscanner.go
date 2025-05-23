@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"flag"
-	"fmt"
-	"os"
 	"strings"
 	"sync"
 
@@ -117,8 +114,4 @@ func main() {
 	if *output != "" {
 		subnet.ExportToJSON(devices, *output)
 	}
-
-	// Prompt to exit
-	fmt.Println("\nPress Enter to exit the program.")
-	bufio.NewReader(os.Stdin).ReadString('\n')
 }
