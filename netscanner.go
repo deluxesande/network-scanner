@@ -75,29 +75,7 @@ func main() {
 	credits := flag.Bool("c", false, "Show program credits")
 	output := flag.String("output", "", "Output file for JSON results")
 
-	// Define a map for aliases
-	aliases := map[string]*string{
-		"o": output,
-		"s": subnetFlag,
-	}
-
-	// Define short flags
-	var shortFlags = make(map[string]string)
-	for alias := range aliases {
-		shortFlags[alias] = ""
-		value := shortFlags[alias]
-		flag.StringVar(&value, alias, "", fmt.Sprintf("Alias for --%s", alias))
-		shortFlags[alias] = value
-	}
-
 	flag.Parse()
-
-	// Resolve aliases
-	for alias, target := range aliases {
-		if shortFlags[alias] != "" {
-			*target = shortFlags[alias]
-		}
-	}
 
 	var chosen []string
 
