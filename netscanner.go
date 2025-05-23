@@ -5,10 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/deluxesande/network-scanner/subnet"
+	"github.com/deluxesande/network-scanner/tcp"
 	"github.com/deluxesande/network-scanner/utils"
 
 	"github.com/fatih/color"
@@ -35,20 +37,15 @@ func displayHelp() {
 	color.Green(`Usage: netscanner [options]
 
 Options:
-  -h, --help          Show this help message and exit
-  -v, --version       Show version information and exit
-  -o, --output FILE   Specify output file for JSON results (default: results.json)
-  -s, --subnet SUBNET Specify a specific subnet to scan (e.g., 192.168.1.0/24)
-  -a, --all           Scan all detected subnets
-  -m, --mac           Include MAC address resolution in the scan
-  -t, --ttl           Display TTL values and estimated OS for each device
-  -c, --credits       Display program credits and exit
+  -h,          Show this help message and exit
+  --version       Show version information and exit
+  --output FILE   Specify output file for JSON results (default: results.json)
+  --subnet SUBNET Specify a specific subnet to scan (e.g., 192.168.1.0/24)
+  --credits       Display program credits and exit
 
 Examples:
-  netscanner -o output.json
+  netscanner --output output.json
   netscanner --subnet 192.168.1.0/24
-  netscanner -a -m -o devices.json
-  netscanner -t
   `)
 }
 
@@ -69,11 +66,46 @@ func printResults(devices []utils.Device) {
 	color.Green("✅ Done. %d device(s) detected.\n", len(devices))
 }
 
+func scanTcp() {
+	// Ensure the user has provided the required arguments
+	args := flag.Args()
+
+	if len(args) < 3 {
+		color.Red("❌ Please provide the host, start port, and end port for TCP scanning.")
+		fmt.Println("Usage: netscanner --tcp <host> <startPort> <endPort>")
+		return
+	}
+	host := args[0]
+	startPort, err1 := strconv.Atoi(args[1])
+	endPort, err2 := strconv.Atoi(args[2])
+
+	// Validate the ports
+	if err1 != nil || err2 != nil || startPort < 1 || endPort > 65535 || startPort > endPort {
+		color.Red("❌ Error: Invalid port range. Ports must be integers between 1 and 65535, and startPort must be <= endPort.")
+		return
+	}
+
+	// Perform the TCP scan
+	color.Cyan("🔍 Scanning for open TCP ports on %s from port %d to %d...", host, startPort, endPort)
+	openPorts := tcp.ScanOpenTcpPorts(host, startPort, endPort)
+
+	// Display the results
+	if len(openPorts) > 0 {
+		color.Green("✅ Open ports found:")
+		for port, service := range openPorts {
+			fmt.Printf(" - Port %d: %s (Version: %s)\n", port, service.Service, service.Version)
+		}
+	} else {
+		color.Yellow("⚠️ No open ports found in the specified range.")
+	}
+}
+
 func main() {
 	help := flag.Bool("h", false, "Show help message")
 	subnetFlag := flag.String("subnet", "", "Comma-separated list of subnets to scan (e.g., 192.168.1.0/24,10.0.0.0/24)")
-	credits := flag.Bool("c", false, "Show program credits")
+	credits := flag.Bool("credit", false, "Show program credits")
 	output := flag.String("output", "", "Output file for JSON results")
+	openTcp := flag.Bool("tcp", false, "Scan for open TCP ports (default: false)")
 
 	flag.Parse()
 
@@ -86,6 +118,11 @@ func main() {
 
 	if *credits {
 		displayCredits()
+		return
+	}
+
+	if *openTcp {
+		scanTcp()
 		return
 	}
 
