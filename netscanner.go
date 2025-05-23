@@ -39,7 +39,7 @@ func displayHelp() {
 Options:
   -h,          Show this help message and exit
   --version       Show version information and exit
-  --output FILE   Specify output file for JSON results (default: results.json)
+  --output FILE   Specify output file for JSON results
   --subnet SUBNET Specify a specific subnet to scan (e.g., 192.168.1.0/24)
   --credits       Display program credits and exit
 
@@ -123,7 +123,6 @@ func main() {
 
 	if *openTcp {
 		scanTcp()
-		return
 	}
 
 	// Determine subnets to scan
@@ -173,8 +172,6 @@ func main() {
 
 	if *output != "" {
 		subnet.ExportToJSON(devices, *output)
-	} else {
-		subnet.ExportToJSON(devices, "results.json")
 	}
 
 	// Prompt to exit
