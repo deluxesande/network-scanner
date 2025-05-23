@@ -11,6 +11,7 @@ import (
 
 	"github.com/deluxesande/network-scanner/subnet"
 	"github.com/deluxesande/network-scanner/tcp"
+	"github.com/deluxesande/network-scanner/udp"
 	"github.com/deluxesande/network-scanner/utils"
 
 	"github.com/fatih/color"
@@ -41,11 +42,12 @@ Options:
   --version       Show version information and exit
   --output FILE   Specify output file for JSON results
   --subnet SUBNET Specify a specific subnet to scan (e.g., 192.168.1.0/24)
+  --tcp <host> <port> <port> HOST STARTPORT ENDPORT Scan for open TCP ports on a specific host
   --credits       Display program credits and exit
 
 Examples:
-  netscanner --output output.json
-  netscanner --subnet 192.168.1.0/24
+  netscanner --tcp 192.168.1.10 80 100
+  netscanner --subnet 192.168.1.0/24 --output output.json
   `)
 }
 
@@ -100,12 +102,45 @@ func scanTcp() {
 	}
 }
 
+func scanUdp() {
+	args := flag.Args()
+
+	if len(args) < 3 {
+		color.Red("❌ Please provide the host, start port, and end port for UDP scanning.")
+		fmt.Println("Usage: netscanner --udp <host> <startPort> <endPort>")
+		return
+	}
+
+	host := args[0]
+	startPort, err1 := strconv.Atoi(args[1])
+	endPort, err2 := strconv.Atoi(args[2])
+
+	// Validate the ports
+	if err1 != nil || err2 != nil || startPort < 1 || endPort > 65535 || startPort > endPort {
+		color.Red("❌ Error: Invalid port range. Ports must be integers between 1 and 65535, and startPort must be <= endPort.")
+		return
+	}
+
+	color.Cyan("🔍 Scanning for open UDP ports on %s from port %d to %d...", host, startPort, endPort)
+	openPorts := udp.ScanOpenUdpPorts(host, startPort, endPort)
+
+	if len(openPorts) > 0 {
+		color.Green("✅ Open UDP ports found:")
+		for port, service := range openPorts {
+			fmt.Printf(" - Port %d: %s\n", port, service)
+		}
+	} else {
+		color.Yellow("⚠️ No open UDP ports found in the specified range.")
+	}
+}
+
 func main() {
 	help := flag.Bool("h", false, "Show help message")
 	subnetFlag := flag.String("subnet", "", "Comma-separated list of subnets to scan (e.g., 192.168.1.0/24,10.0.0.0/24)")
 	credits := flag.Bool("credit", false, "Show program credits")
 	output := flag.String("output", "", "Output file for JSON results")
 	openTcp := flag.Bool("tcp", false, "Scan for open TCP ports (default: false)")
+	openUdp := flag.Bool("udp", false, "Scan for open UDP ports (default: false)")
 
 	flag.Parse()
 
@@ -123,6 +158,16 @@ func main() {
 
 	if *openTcp {
 		scanTcp()
+		if flag.NFlag() == 1 { // Check if --tcp is the only flag provided
+			return
+		}
+	}
+
+	if *openUdp {
+		scanUdp()
+		if flag.NFlag() == 1 { // Check if --udp is the only flag provided
+			return
+		}
 	}
 
 	// Determine subnets to scan
@@ -177,5 +222,4 @@ func main() {
 	// Prompt to exit
 	fmt.Println("\nPress Enter to exit the program.")
 	bufio.NewReader(os.Stdin).ReadString('\n')
-	fmt.Println("👋 Exiting the program. Goodbye!")
 }

@@ -50,3 +50,30 @@ var CommonPorts = map[int]string{
 	11211: "Memcached",
 	27017: "MongoDB",
 }
+
+// Map of common UDP ports and their services
+var UdpServices = map[int]string{
+	53:    "DNS (Domain Name System)",
+	67:    "DHCP (Dynamic Host Configuration Protocol) - Server",
+	68:    "DHCP (Dynamic Host Configuration Protocol) - Client",
+	69:    "TFTP (Trivial File Transfer Protocol)",
+	123:   "NTP (Network Time Protocol)",
+	161:   "SNMP (Simple Network Management Protocol)",
+	162:   "SNMP Trap",
+	500:   "ISAKMP (Internet Security Association and Key Management Protocol)",
+	514:   "Syslog",
+	520:   "RIP (Routing Information Protocol)",
+	1812:  "RADIUS (Authentication)",
+	1813:  "RADIUS (Accounting)",
+	2049:  "NFS (Network File System)",
+	5353:  "mDNS (Multicast DNS)",
+	33434: "Traceroute",
+	137:   "NetBIOS Name Service",
+	138:   "NetBIOS Datagram Service",
+	1434:  "Microsoft SQL Monitor",
+	1900:  "SSDP (Simple Service Discovery Protocol)",
+	4500:  "IPSec NAT Traversal",
+	5355:  "LLMNR (Link-Local Multicast Name Resolution)",
+	5683:  "CoAP (Constrained Application Protocol)",
+	64738: "Mumble (Voice Chat)",
+}
