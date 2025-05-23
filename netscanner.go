@@ -37,6 +37,13 @@ func main() {
 		return
 	}
 
+	if *openTcp && *openUdp {
+		// Run both TCP and UDP scans if both flags are provided
+		netscanner.ScanTcp()
+		netscanner.ScanUdp()
+		return // Terminate the program after running both scans
+	}
+
 	if *openTcp {
 		netscanner.ScanTcp()
 		if flag.NFlag() == 1 { // Check if --tcp is the only flag provided
