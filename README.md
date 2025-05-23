@@ -1,8 +1,25 @@
-# NetScanner - Network Scanner in Go
+# NetScanner 
+<pre>
+`                                                      
+	_                                           
+	____   ____| |_   ___  ____ ____ ____  ____   ____  ____ 
+   |  _ \ / _  )  _) /___)/ ___) _  |  _ \|  _ \ / _  )/ ___)
+   | | | ( (/ /| |__|___ ( (__( ( | | | | | | | ( (/ /| |    
+   |_| |_|\____)\___|___/ \____)_||_|_| |_|_| |_|\____)_|    														 
+   
+
+	Netscanner: Lightweight CLI tool to scan your local network for active devices,
+	detect operating systems via TTL, and export results to JSON.
+
+	Created by deluxesande
+	GitHub: https://github.com/deluxesande/net-scanner
+	`
+</pre>
 
 ![netscanner](https://img.shields.io/badge/language-Go-blue?logo=go)
 
 A concurrent network scanner built with Go that detects active devices on your local subnets. It identifies devices’ IP addresses, hostnames, operating systems (estimated via TTL), and MAC addresses, then exports results to a JSON file.
+
 
 ---
 
@@ -13,6 +30,7 @@ A concurrent network scanner built with Go that detects active devices on your l
 - Estimates device OS based on TTL values
 - Resolves hostnames via reverse DNS
 - Retrieves MAC addresses from ARP tables
+- **Scans specific ports to detect open services**
 - Exports device info to `results.json`
 - Cross-platform (Windows, Linux, macOS)
 
@@ -26,7 +44,8 @@ A concurrent network scanner built with Go that detects active devices on your l
 4. Parses TTL from ping response to estimate OS.
 5. Resolves hostname via reverse DNS lookup.
 6. Fetches MAC addresses from ARP table.
-7. Displays results and exports to JSON.
+7. **Scans specified ports to detect open services.**
+8. Displays results and exports to JSON.
 
 ---
 
@@ -35,6 +54,35 @@ A concurrent network scanner built with Go that detects active devices on your l
 - Go installed (for building from source): [Install Go](https://golang.org/doc/install)
 - Internet connectivity on your machine (for network scanning)
 - Administrative privileges may be required on some OS to access ARP tables.
+
+---
+
+## Help and Usage
+
+The `netscanner` CLI tool provides a `--help` option (or `-h`) to display detailed usage instructions and examples. This is implemented using the `DisplayHelp` function, which outputs the following information:
+
+### Usage
+<pre>
+Usage: netscanner [options]
+
+Options:
+  -h                Show this help message and exit
+  --version         Show version information and exit
+  --output FILE     Specify output file for JSON results
+  --subnet SUBNET   Specify a specific subnet to scan (e.g., 192.168.1.0/24)
+  --tcp HOST STARTPORT ENDPORT
+                    Scan for open TCP ports on a specific host
+  --credits         Display program credits and exit
+```
+
+#### Scan TCP ports 80 to 100 on a specific host
+```bash
+netscanner --tcp 192.168.1.10 80 100
+```
+#### Scan a specific subnet and save results to a custom output file
+```bash
+netscanner --subnet 192.168.1.0/24 --output output.json
+</pre>
 
 ---
 
@@ -56,7 +104,7 @@ go run subnet_scanner.go
 
 ## Example Terminal Session
 
-```bash
+<pre>
 $ ./netscanner
 🔍 Detecting local subnets...
 Choose a subnet to scan:
@@ -80,7 +128,7 @@ IP Address       Hostname                       OS              MAC Address
 ✅ Done. 3 device(s) detected.
 
 📁 Results saved to results.json
-```
+</pre>
 
 ---
 
@@ -100,6 +148,15 @@ IP Address       Hostname                       OS              MAC Address
 ]
 ```
 
+---
+
+## Using as a Go Module
+
+You can import this project into your Go application as a module. Add the following import statement to your Go code:
+
+```go
+import "github.com/yourusername/netscanner/netscanner"
+```
 ---
 
 ## How to Use the Precompiled Binaries
