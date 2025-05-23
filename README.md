@@ -1,26 +1,9 @@
 # NetScanner 
 
-``` bash                                                    
-	_                                           
-	____   ____| |_   ___  ____ ____ ____  ____   ____  ____ 
-   |  _ \ / _  )  _) /___)/ ___) _  |  _ \|  _ \ / _  )/ ___)
-   | | | ( (/ /| |__|___ ( (__( ( | | | | | | | ( (/ /| |    
-   |_| |_|\____)\___|___/ \____)_||_|_| |_|_| |_|\____)_|    														 
-   
-
-	Netscanner: Lightweight CLI tool to scan your local network for active devices,
-	detect operating systems via TTL, and export results to JSON.
-
-	Created by deluxesande
-	GitHub: https://github.com/deluxesande/net-scanner
-```
-
 ![netscanner](https://img.shields.io/badge/language-Go-blue?logo=go)
 
 A concurrent network scanner built with Go that detects active devices on your local subnets. It identifies devices’ IP addresses, hostnames, operating systems (estimated via TTL), and MAC addresses, then exports results to a JSON file.
 
-
----
 
 ## Features
 
@@ -33,8 +16,6 @@ A concurrent network scanner built with Go that detects active devices on your l
 - Exports device info to `results.json`
 - Cross-platform (Windows, Linux, macOS)
 
----
-
 ## How It Works
 
 1. Detects local network subnets by reading system network interfaces.
@@ -46,19 +27,15 @@ A concurrent network scanner built with Go that detects active devices on your l
 7. **Scans specified ports to detect open services.**
 8. Displays results and exports to JSON.
 
----
-
 ## Prerequisites
 
 - Go installed (for building from source): [Install Go](https://golang.org/doc/install)
 - Internet connectivity on your machine (for network scanning)
 - Administrative privileges may be required on some OS to access ARP tables.
 
----
-
 ## Help and Usage
 
-The `netscanner` CLI tool provides a `--help` option (or `-h`) to display detailed usage instructions and examples. This is implemented using the `DisplayHelp` function, which outputs the following information:
+The `netscanner` CLI tool provides a `-h` option to display detailed usage instructions and examples. This is implemented using the `DisplayHelp` function, which outputs the following information:
 
 ### Usage
 ```
@@ -87,14 +64,13 @@ netscanner --subnet 192.168.1.0/24 --output output.json
 
 ## Cloning and Running
 
-### 1. Clone the repo
+This section explains how to clone the repository and run the netscanner application using Go. It provides simple steps to get the code and execute it directly from the source.
+
 
 ```bash
-git clone https://github.com/yourusername/netscanner.git
+git clone https://github.com/deluxesande/netscanner.git
 cd netscanner
 ```
-
-### 2. Run the code
 
 ```bash
 go run netscanner.go
@@ -129,8 +105,6 @@ IP Address       Hostname                       OS              MAC Address
 📁 Results saved to results.json
 </pre>
 
----
-
 ## Output Files
 
 - `results.json` — JSON file containing an array of detected devices, with fields:
@@ -147,8 +121,6 @@ IP Address       Hostname                       OS              MAC Address
 ]
 ```
 
----
-
 ## Using as a Go Module
 
 You can import this project into your Go application as a module. Add the following import statement to your Go code:
@@ -156,7 +128,6 @@ You can import this project into your Go application as a module. Add the follow
 ```go
 import "github.com/deluxesande/netscanner/netscanner"
 ```
----
 
 ## How to Use the Precompiled Binaries
 Simply download the binary for your platform from the Release page and run it from your terminal or command prompt.
@@ -177,7 +148,6 @@ This section provides instructions on how to run the `netscanner` binary on diff
 
 *The scripts accounts for x86_64 systems*
 
-### Installing the Binary
 The installation commands automate the process of downloading the appropriate installer script from the GitHub repository, running the script, and cleaning up after execution:
 - **Windows**: Uses a PowerShell command to download and execute the `netscanner_install.ps1` script.
 - **Linux**: Uses `curl` to fetch the `netscanner_install.sh` script, executes it, and removes it afterward.
@@ -185,28 +155,45 @@ The installation commands automate the process of downloading the appropriate in
 
 These commands ensure that the `netscanner` binary is installed system-wide and can be run from anywhere on the system without requiring manual setup.
 
+#### Windows
 ```bash
 $script = "$env:TEMP\netscanner_install.ps1"; Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/deluxesande/network-scanner/main/install/netscanner_install.ps1' -OutFile $script; & $script; Remove-Item $script
 ```
-
+#### Linux
 ```bash
 curl -s https://raw.githubusercontent.com/deluxesande/network-scanner/main/install/netscanner_install.sh -o /tmp/netscanner_install.sh && bash /tmp/netscanner_install.sh && rm /tmp/netscanner_install.sh
 ```
-
+#### Darwin/macOS
 ```bash
 curl -s https://raw.githubusercontent.com/deluxesande/network-scanner/main/install/netscanner_install_mac.sh -o /tmp/netscanner_install_mac.sh && bash /tmp/netscanner_install_mac.sh && rm /tmp/netscanner_install_mac.sh
 ```
 
----
+## Uninstalling the binaries
 
+This section provides commands to uninstall the netscanner binary from your system. The commands remove the binary from its installation directory and ensure it is no longer included in the system's PATH. After running the commands, restart your terminal to apply the changes.
+
+#### Windows
+```bash
+$installPath = "$env:USERPROFILE\netscanner"; [Environment]::SetEnvironmentVariable("Path", ($env:Path -replace ";$installPath", ""), [EnvironmentVariableTarget]::User); Remove-Item -Recurse -Force $installPath; Write-Host "netscanner uninstalled successfully."
+```
+
+#### Linux
+
+```bash
+rm -f "$HOME/.local/bin/netscanner" && sed -i '/.local\/bin/d' "$HOME/.bashrc" && echo "netscanner uninstalled successfully. Restart your terminal to apply changes."
+```
+
+#### macOS
+
+```bash
+rm -f "$HOME/.local/bin/netscanner" && sed -i '' '/.local\/bin/d' "$HOME/.zshrc" && echo "netscanner uninstalled successfully. Restart your terminal to apply changes."`
+```
 ## Notes
 
 - On some systems, administrative rights may be needed to run the `arp` command or to ping successfully.
 - Estimated OS is based on common TTL values but might not always be accurate.
 - Hostnames may be empty if reverse DNS is not set up on the network.
 - The scanner pings IPs from `.1` to `.254` in the subnet.
-
----
 
 ## Contributing
 
@@ -219,13 +206,9 @@ Contributions are welcome! If you'd like to contribute to this project, please f
 
 For major changes, please open an issue first to discuss what you would like to change.
 
----
-
 ## Changelog
 
 All notable changes to this project will be documented in the `CHANGELOG.md` file. Please refer to it for details on updates, fixes, and new features.
-
----
 
 ## License
 
