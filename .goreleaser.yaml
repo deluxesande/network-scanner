@@ -38,6 +38,14 @@ archives:
       - goos: windows
         formats: [zip]
 
+nfpms:
+  - id: deb
+    formats:
+      - deb
+    maintainer: "Your Name <your-email@example.com>"
+    description: "A network scanner tool"
+    license: MIT
+    
 changelog:
   sort: asc
   filters:
