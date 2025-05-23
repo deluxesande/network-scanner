@@ -170,6 +170,35 @@ Simply download the binary for your platform from the Release page and run it fr
 ```
 
 ---
+## Install binaries into the system
+
+This section provides instructions on how to run the `netscanner` binary on different operating systems and how to install it system-wide using one-line commands. The commands are tailored for Windows, Linux, and macOS, ensuring that the `netscanner` binary is downloaded, executed, and added to the system's `PATH` for easy access.
+
+### Running the Binary
+- **Linux/macOS**: The binary can be executed directly using `./netscanner`.
+- **Windows**: The binary can be executed using `.\netscanner.exe` in PowerShell.
+
+### Installing the Binary
+The installation commands automate the process of downloading the appropriate installer script from the GitHub repository, running the script, and cleaning up after execution:
+- **Windows**: Uses a PowerShell command to download and execute the `netscanner_install.ps1` script.
+- **Linux**: Uses `curl` to fetch the `netscanner_install.sh` script, executes it, and removes it afterward.
+- **macOS**: Similar to Linux, but uses the macOS-specific `netscanner_install_mac.sh` script.
+
+These commands ensure that the `netscanner` binary is installed system-wide and can be run from anywhere on the system without requiring manual setup.
+
+```bash
+$script = "$env:TEMP\netscanner_install.ps1"; Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/deluxesande/network-scanner/main/install/netscanner_install.ps1' -OutFile $script; & $script; Remove-Item $script
+```
+
+```bash
+curl -s https://raw.githubusercontent.com/deluxesande/network-scanner/main/install/netscanner_install.sh -o /tmp/netscanner_install.sh && bash /tmp/netscanner_install.sh && rm /tmp/netscanner_install.sh
+```
+
+```bash
+curl -s https://raw.githubusercontent.com/deluxesande/network-scanner/main/install/netscanner_install_mac.sh -o /tmp/netscanner_install_mac.sh && bash /tmp/netscanner_install_mac.sh && rm /tmp/netscanner_install_mac.sh
+```
+
+---
 
 ## Notes
 

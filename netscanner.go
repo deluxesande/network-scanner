@@ -15,6 +15,38 @@ import (
 	"github.com/fatih/color"
 )
 
+func subnet_scan(chosen []string) []utils.Device {
+	color.Green("\n🌐 Scanning selected subnet(s)...\n")
+	var wg sync.WaitGroup
+	results := make(chan utils.Device, 1024)
+
+	for _, subnetChoice := range chosen {
+		wg.Add(1)
+		go subnet.ScanSubnet(subnetChoice, &wg, results)
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	var devices []utils.Device
+	for device := range results {
+		devices = append(devices, device)
+	}
+
+	// Attach MACs
+	color.Yellow("\n🔄 Retrieving MAC addresses...")
+	macTable := subnet.GetMacTable()
+	for i := range devices {
+		if mac, ok := macTable[devices[i].IP]; ok {
+			devices[i].MAC = mac
+		}
+	}
+
+	return devices
+}
+
 func main() {
 	help := flag.Bool("h", false, "Show help message")
 	subnetFlag := flag.String("subnet", "", "Comma-separated list of subnets to scan (e.g., 192.168.1.0/24,10.0.0.0/24)")
@@ -60,7 +92,6 @@ func main() {
 
 	// Determine subnets to scan
 	if *subnetFlag != "" {
-		color.Cyan("🔍 Using provided subnets...")
 		chosen = strings.Split(*subnetFlag, ",")
 	} else {
 		color.Cyan("🔍 Detecting local subnets...")
@@ -72,33 +103,7 @@ func main() {
 		chosen = subnet.AskSubnetChoice(subnets)
 	}
 
-	color.Green("\n🌐 Scanning selected subnet(s)...\n")
-	var wg sync.WaitGroup
-	results := make(chan utils.Device, 1024)
-
-	for _, subnetChoice := range chosen {
-		wg.Add(1)
-		go subnet.ScanSubnet(subnetChoice, &wg, results)
-	}
-
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	var devices []utils.Device
-	for device := range results {
-		devices = append(devices, device)
-	}
-
-	// Attach MACs
-	color.Yellow("\n🔄 Retrieving MAC addresses...")
-	macTable := subnet.GetMacTable()
-	for i := range devices {
-		if mac, ok := macTable[devices[i].IP]; ok {
-			devices[i].MAC = mac
-		}
-	}
+	devices := subnet_scan(chosen)
 
 	// Print results
 	netscanner.PrintResults(devices)
