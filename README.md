@@ -1,6 +1,6 @@
 # NetScanner 
-<pre>
-`                                                      
+
+``` bash                                                    
 	_                                           
 	____   ____| |_   ___  ____ ____ ____  ____   ____  ____ 
    |  _ \ / _  )  _) /___)/ ___) _  |  _ \|  _ \ / _  )/ ___)
@@ -13,8 +13,7 @@
 
 	Created by deluxesande
 	GitHub: https://github.com/deluxesande/net-scanner
-	`
-</pre>
+```
 
 ![netscanner](https://img.shields.io/badge/language-Go-blue?logo=go)
 
