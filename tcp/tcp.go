@@ -6,14 +6,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/deluxesande/network-scanner/utils"
 )
 
-type ServiceInfo struct {
-	Service string
-	Version string
-}
-
-func scanPort(host string, port int, results chan<- map[int]ServiceInfo, wg *sync.WaitGroup) {
+func scanPort(host string, port int, results chan<- map[int]utils.ServiceInfo, wg *sync.WaitGroup) {
 	defer wg.Done() // Decrement the WaitGroup counter when the goroutine completes
 
 	address := host + ":" + strconv.Itoa(port)
@@ -29,7 +26,7 @@ func scanPort(host string, port int, results chan<- map[int]ServiceInfo, wg *syn
 		service, version := identifyService(port, banner)
 
 		// Send the open port to the channel
-		results <- map[int]ServiceInfo{port: {Service: service, Version: version}}
+		results <- map[int]utils.ServiceInfo{port: {Service: service, Version: version}}
 	}
 }
 
@@ -58,27 +55,10 @@ func grabBanner(host string, port int) string {
 }
 
 func identifyService(port int, banner string) (string, string) {
-	commonPorts := map[int]string{
-		21:    "FTP",
-		22:    "SSH",
-		23:    "Telnet",
-		25:    "SMTP",
-		53:    "DNS",
-		80:    "HTTP",
-		110:   "POP3",
-		143:   "IMAP",
-		443:   "HTTPS",
-		3306:  "MySQL",
-		5432:  "PostgreSQL",
-		6379:  "Redis",
-		8080:  "HTTP-Proxy",
-		27017: "MongoDB",
-	}
-
 	// Try to identify the service based on the port number
 	service := "Unknown"
 
-	if s, exists := commonPorts[port]; exists {
+	if s, exists := utils.CommonPorts[port]; exists {
 		service = s
 	}
 
@@ -124,10 +104,10 @@ func identifyService(port int, banner string) (string, string) {
 	return service, version
 }
 
-func ScanOpenTcpPorts(host string, startPort, endPort int) map[int]ServiceInfo {
+func ScanOpenTcpPorts(host string, startPort, endPort int) map[int]utils.ServiceInfo {
 	var wg sync.WaitGroup
-	results := make(chan map[int]ServiceInfo, endPort-startPort+1) // Buffered channel to hold open ports
-	sem := make(chan struct{}, 100)                                // Semaphore to limit concurrent goroutines
+	results := make(chan map[int]utils.ServiceInfo, endPort-startPort+1) // Buffered channel to hold open ports
+	sem := make(chan struct{}, 100)                                      // Semaphore to limit concurrent goroutines
 
 	for port := startPort; port <= endPort; port++ {
 		wg.Add(1)
@@ -148,7 +128,7 @@ func ScanOpenTcpPorts(host string, startPort, endPort int) map[int]ServiceInfo {
 	}()
 
 	// Collect open ports from the results channel
-	openPorts := make(map[int]ServiceInfo)
+	openPorts := make(map[int]utils.ServiceInfo)
 	for result := range results {
 		for port, info := range result {
 			openPorts[port] = info
