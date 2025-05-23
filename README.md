@@ -61,6 +61,7 @@ A concurrent network scanner built with Go that detects active devices on your l
 The `netscanner` CLI tool provides a `--help` option (or `-h`) to display detailed usage instructions and examples. This is implemented using the `DisplayHelp` function, which outputs the following information:
 
 ### Usage
+```
 Usage: netscanner [options]
 
 Options:
@@ -175,10 +176,6 @@ Simply download the binary for your platform from the Release page and run it fr
 This section provides instructions on how to run the `netscanner` binary on different operating systems and how to install it system-wide using one-line commands. The commands are tailored for Windows, Linux, and macOS, ensuring that the `netscanner` binary is downloaded, executed, and added to the system's `PATH` for easy access.
 
 *The scripts accounts for x86_64 systems*
-
-### Running the Binary
-- **Linux/macOS**: The binary can be executed directly using `./netscanner`.
-- **Windows**: The binary can be executed using `.\netscanner.exe` in PowerShell.
 
 ### Installing the Binary
 The installation commands automate the process of downloading the appropriate installer script from the GitHub repository, running the script, and cleaning up after execution:
