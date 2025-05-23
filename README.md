@@ -97,7 +97,7 @@ cd netscanner
 ### 2. Run the code
 
 ```bash
-go run subnet_scanner.go
+go run netscanner.go
 ```
 ---
 
@@ -154,7 +154,7 @@ IP Address       Hostname                       OS              MAC Address
 You can import this project into your Go application as a module. Add the following import statement to your Go code:
 
 ```go
-import "github.com/yourusername/netscanner/netscanner"
+import "github.com/deluxesande/netscanner/netscanner"
 ```
 ---
 
