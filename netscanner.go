@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/deluxesande/network-scanner/netscanner/ping"
 	netscanner "github.com/deluxesande/network-scanner/netscanner/utils"
 	"github.com/deluxesande/network-scanner/subnet"
 	"github.com/deluxesande/network-scanner/utils"
@@ -52,6 +53,7 @@ func main() {
 	openTcp := flag.Bool("tcp", false, "Scan for open TCP ports (default: false)")
 	openUdp := flag.Bool("udp", false, "Scan for open UDP ports (default: false)")
 	version := flag.Bool("version", false, "Show version information")
+	ipaddr := flag.Bool("ip", false, "Get IP address of a website (e.g., --ip google.com)")
 
 	flag.Parse()
 
@@ -89,6 +91,18 @@ func main() {
 	if *openUdp {
 		netscanner.ScanUdp()
 		if flag.NFlag() == 1 { // Check if --udp is the only flag provided
+			return
+		}
+	}
+
+	if *ipaddr {
+		ip, err := ping.GetIpAddress()
+		if err != nil {
+			color.Red(err.Error())
+		} else {
+			color.Green("✅ Found IP: %s", ip)
+		}
+		if flag.NFlag() == 1 { // Check if --ip is the only flag provided
 			return
 		}
 	}
