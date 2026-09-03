@@ -41,6 +41,9 @@ func GetLocalSubnets() []string {
 		}
 		for _, addr := range addrs {
 			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
+				if ones, _ := ipnet.Mask.Size(); ones > 24 {
+					continue // ScanSubnet walks a /24; narrower masks aren't one
+				}
 				ip := ipnet.IP.Mask(ipnet.Mask)
 				subnet := ip.String()
 				if !subnetMap[subnet] { // Check if the subnet is already added
@@ -59,8 +62,10 @@ func PingWithTTL(ip string) (bool, string) {
 	switch osName {
 	case "windows":
 		cmd = exec.Command("ping", "-n", "1", "-w", "1000", ip)
-	case "linux", "darwin":
+	case "linux":
 		cmd = exec.Command("ping", "-c", "1", "-W", "1", ip)
+	case "darwin":
+		cmd = exec.Command("ping", "-c", "1", "-W", "1000", ip) // darwin -W is ms
 	default:
 		return false, ""
 	}
@@ -71,7 +76,7 @@ func PingWithTTL(ip string) (bool, string) {
 	outStr := string(output)
 
 	// For all OS, detect TTL using a regex
-	re := regexp.MustCompile(`TTL[=|:](\d+)`)
+	re := regexp.MustCompile(`(?i)ttl[=:]\s*(\d+)`)
 	matches := re.FindStringSubmatch(outStr)
 	if len(matches) < 2 {
 		return false, ""
@@ -137,7 +142,7 @@ func ScanSubnet(subnet string, wg *sync.WaitGroup, results chan<- utils.Device) 
 func AskSubnetChoice(subnets []string) []string {
 	fmt.Println("Choose a subnet to scan:")
 	for i, s := range subnets {
-		fmt.Printf("  [%d] %s.0/24\n", i+1, s)
+		fmt.Printf("  [%d] %s/24\n", i+1, s)
 	}
 	fmt.Print("  [0] All subnets\n")
 
@@ -184,7 +189,7 @@ func GetMacTable() map[string]string {
 	lines := strings.Split(string(output), "\n")
 
 	// Different output format parsing per OS
-	re := regexp.MustCompile(`(\d+\.\d+\.\d+\.\d+)\s+(([a-fA-F0-9]{2}[:-]){5}[a-fA-F0-9]{2})`)
+	re := regexp.MustCompile(`(\d+\.\d+\.\d+\.\d+)\D+(([a-fA-F0-9]{2}[:-]){5}[a-fA-F0-9]{2})`)
 
 	for _, line := range lines {
 		matches := re.FindStringSubmatch(line)
