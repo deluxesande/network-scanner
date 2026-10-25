@@ -45,13 +45,19 @@ Examples:
   `)
 }
 
+// Set at build time via -ldflags; see .goreleaser.yaml.
+var (
+	Version   = "dev"
+	BuildDate = "unknown"
+)
+
 func DisplayVersion() {
 	color.Green(`Netscanner
-Version: 0.2.0
-Build Date: 2025-05-23
+Version: %s
+Build Date: %s
 Author: Deluxe Sande
 Repository: https://github.com/deluxesande/network-scanner
-	`)
+	`, Version, BuildDate)
 }
 
 func PrintResults(devices []utils.Device) {
