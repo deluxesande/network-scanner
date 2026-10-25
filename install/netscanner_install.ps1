@@ -1,35 +1,39 @@
-# Download and install netscanner on Windows
-$version = "v0.2.0"
-$os = "windows"
-$arch = "amd64"
-$url = "https://github.com/deluxesande/network-scanner/releases/download/$version/netscanner_Windows_x86_64.zip"
+$ErrorActionPreference = "Stop"
+
+$repo = "deluxesande/network-scanner"
 $installPath = "$env:USERPROFILE\netscanner"
 
-# Create installation directory silently
-try {
-    New-Item -ItemType Directory -Force -Path $installPath | Out-Null
-} catch {
-    Write-Host "Failed to create directory: $installPath"
-    exit 1
+# Architecture detection. PROCESSOR_ARCHITEW6432 is set when a 32-bit
+# PowerShell runs on 64-bit Windows, so check it first.
+$rawArch = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
+switch ($rawArch) {
+    "AMD64" { $arch = "x86_64" }
+    "ARM64" { $arch = "arm64" }
+    default { Write-Host "Unsupported architecture: $rawArch"; exit 1 }
 }
 
-# Download the binary
-Write-Host "Downloading netscanner..."
-Invoke-WebRequest -Uri $url -OutFile "$installPath\netscanner.zip"
+$url = "https://github.com/$repo/releases/latest/download/netscanner_Windows_$arch.zip"
+$tmp = Join-Path $env:TEMP "netscanner_install"
 
-# Extract the binary
-Write-Host "Extracting netscanner..."
-Expand-Archive -Path "$installPath\netscanner.zip" -DestinationPath $installPath -Force
+if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
+New-Item -ItemType Directory -Force -Path $tmp, $installPath | Out-Null
 
-# Rename the binary to 'netscanner.exe'
-Rename-Item -Path "$installPath\network-scanner.exe" -NewName "netscanner.exe"
+Write-Host "Downloading netscanner (windows/$arch)..."
+Invoke-WebRequest -Uri $url -OutFile "$tmp\netscanner.zip"
+Expand-Archive -Path "$tmp\netscanner.zip" -DestinationPath $tmp -Force
 
-# Add to PATH
-Write-Host "Adding netscanner to PATH..."
-$env:Path += ";$installPath"
-[Environment]::SetEnvironmentVariable("Path", $env:Path, [EnvironmentVariableTarget]::User)
+# Copy -Force overwrites an existing install, so reinstalling and upgrading work.
+# (Interim, before the new release: use "$tmp\network-scanner.exe" here.)
+Copy-Item "$tmp\netscanner.exe" "$installPath\netscanner.exe" -Force
+Remove-Item -Recurse -Force $tmp
 
-# Clean up
-Remove-Item "$installPath\netscanner.zip"
+# PATH: read ONLY the user-scope PATH, so the system PATH is not copied into it
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if (($userPath -split ";") -notcontains $installPath) {
+    $newPath = if ([string]::IsNullOrEmpty($userPath)) { $installPath } else { "$userPath;$installPath" }
+    [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+}
+# Current session only, so it works right away
+if (($env:Path -split ";") -notcontains $installPath) { $env:Path += ";$installPath" }
 
-Write-Host "netscanner installed successfully! You can now run 'netscanner' from anywhere."
+Write-Host "netscanner installed successfully! Run: netscanner -h"
