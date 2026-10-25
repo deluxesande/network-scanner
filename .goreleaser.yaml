@@ -17,6 +17,10 @@ before:
 
 builds:
   - binary: netscanner
+    ldflags:
+      - -s -w
+      - -X github.com/deluxesande/network-scanner/netscanner/utils.Version={{ .Version }}
+      - -X github.com/deluxesande/network-scanner/netscanner/utils.BuildDate={{ time "2006-01-02" }}
     env:
       - CGO_ENABLED=0
     goos:
