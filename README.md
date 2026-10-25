@@ -29,25 +29,31 @@ A concurrent network scanner built with Go that detects active devices on your l
 
 ## Prerequisites
 
-- Go installed (for building from source): [Install Go](https://golang.org/doc/install)
-- Internet connectivity on your machine (for network scanning)
-- Administrative privileges may be required on some OS to access ARP tables.
+- A machine connected to a local network (Wi-Fi or Ethernet). Internet access is not needed to scan.
+- `ping` and `arp` must be available on your PATH. On minimal Linux installs:
+  - Debian/Ubuntu: `sudo apt install iputils-ping net-tools`
+  - Fedora: `sudo dnf install iputils net-tools`
+- Go 1.24 or newer, only if you build from source.
+- Administrator/root rights may be needed on some systems to use `arp` or `ping`.
 
 ## Help and Usage
 
 The `netscanner` CLI tool provides a `-h` option to display detailed usage instructions and examples. This is implemented using the `DisplayHelp` function, which outputs the following information:
 
 ### Usage
-```
+```bash
 Usage: netscanner [options]
 
 Options:
   -h                Show this help message and exit
   --version         Show version information and exit
   --output FILE     Specify output file for JSON results
-  --subnet SUBNET   Specify a specific subnet to scan (e.g., 192.168.1.0/24)
+  --subnet SUBNETS  Subnet(s) to scan, comma-separated (e.g., 192.168.1.0/24,10.0.0.0/24)
   --tcp HOST STARTPORT ENDPORT
                     Scan for open TCP ports on a specific host
+  --udp HOST STARTPORT ENDPORT
+                    Scan for open UDP ports on a specific host
+  --ip WEBSITE      Resolve the IP address of a website (e.g., google.com)
   --credits         Display program credits and exit
 ```
 
@@ -60,6 +66,15 @@ netscanner --tcp 192.168.1.10 80 100
 netscanner --subnet 192.168.1.0/24 --output output.json
 ```
 
+#### Scan UDP ports 50 to 100 on a specific host
+```bash
+netscanner --udp 192.168.1.10 50 100
+```
+#### Resolve a website's IP address
+```bash
+netscanner --ip google.com
+```
+
 ---
 
 ## Cloning and Running
@@ -68,12 +83,12 @@ This section explains how to clone the repository and run the netscanner applica
 
 
 ```bash
-git clone https://github.com/deluxesande/netscanner.git
-cd netscanner
+git clone https://github.com/deluxesande/network-scanner.git
+cd network-scanner
 ```
 
 ```bash
-go run netscanner.go
+go run . --subnet 192.168.1.0/24
 ```
 ---
 
@@ -123,10 +138,24 @@ IP Address       Hostname                       OS              MAC Address
 
 ## Using as a Go Module
 
-You can import this project into your Go application as a module. Add the following import statement to your Go code:
+```bash
+go get github.com/deluxesande/network-scanner@latest
+```
 
 ```go
-import "github.com/deluxesande/netscanner/netscanner"
+package main
+
+import (
+    "fmt"
+
+    "github.com/deluxesande/network-scanner/subnet"
+    "github.com/deluxesande/network-scanner/tcp"
+)
+
+func main() {
+    fmt.Println(subnet.GetLocalSubnets())
+    fmt.Println(tcp.ScanOpenTcpPorts("192.168.1.10", 80, 100))
+}
 ```
 
 ## How to Use the Precompiled Binaries
@@ -144,28 +173,21 @@ Simply download the binary for your platform from the Release page and run it fr
 ---
 ## Install binaries into the system
 
-This section provides instructions on how to run the `netscanner` binary on different operating systems and how to install it system-wide using one-line commands. The commands are tailored for Windows, Linux, and macOS, ensuring that the `netscanner` binary is downloaded, executed, and added to the system's `PATH` for easy access.
+The one-line installers download the latest release for your OS and CPU (x86_64 or arm64), put the `netscanner` binary in a user folder, and add that folder to your `PATH`. Open a new terminal after installing.
 
-*The scripts accounts for x86_64 systems*
-
-The installation commands automate the process of downloading the appropriate installer script from the GitHub repository, running the script, and cleaning up after execution:
-- **Windows**: Uses a PowerShell command to download and execute the `netscanner_install.ps1` script.
-- **Linux**: Uses `curl` to fetch the `netscanner_install.sh` script, executes it, and removes it afterward.
-- **macOS**: Similar to Linux, but uses the macOS-specific `netscanner_install_mac.sh` script.
+- **Windows**: runs `netscanner_install.ps1` in PowerShell and installs to `%USERPROFILE%\netscanner`.
+- **Linux and macOS**: runs `netscanner_install.sh`, which detects your OS and architecture, and installs to `~/.local/bin`.
 
 These commands ensure that the `netscanner` binary is installed system-wide and can be run from anywhere on the system without requiring manual setup.
 
-#### Windows
-```bash
+#### Windows (PowerShell)
+```powershell
 $script = "$env:TEMP\netscanner_install.ps1"; Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/deluxesande/network-scanner/main/install/netscanner_install.ps1' -OutFile $script; & $script; Remove-Item $script
 ```
-#### Linux
+
+#### Linux and macOS (Intel and Apple Silicon, x86_64 and arm64)
 ```bash
-curl -s https://raw.githubusercontent.com/deluxesande/network-scanner/main/install/netscanner_install.sh -o /tmp/netscanner_install.sh && bash /tmp/netscanner_install.sh && rm /tmp/netscanner_install.sh
-```
-#### Darwin/macOS
-```bash
-curl -s https://raw.githubusercontent.com/deluxesande/network-scanner/main/install/netscanner_install_mac.sh -o /tmp/netscanner_install_mac.sh && bash /tmp/netscanner_install_mac.sh && rm /tmp/netscanner_install_mac.sh
+curl -fsSL https://raw.githubusercontent.com/deluxesande/network-scanner/main/install/netscanner_install.sh | bash
 ```
 
 ## Uninstalling the binaries
@@ -173,21 +195,27 @@ curl -s https://raw.githubusercontent.com/deluxesande/network-scanner/main/insta
 This section provides commands to uninstall the netscanner binary from your system. The commands remove the binary from its installation directory and ensure it is no longer included in the system's PATH. After running the commands, restart your terminal to apply the changes.
 
 #### Windows
-```bash
-$installPath = "$env:USERPROFILE\netscanner"; [Environment]::SetEnvironmentVariable("Path", ($env:Path -replace ";$installPath", ""), [EnvironmentVariableTarget]::User); Remove-Item -Recurse -Force $installPath; Write-Host "netscanner uninstalled successfully."
+```powershell
+$installPath = "$env:USERPROFILE\netscanner"
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+$newPath = ($userPath -split ";" | Where-Object { $_ -and $_ -ne $installPath }) -join ";"
+[Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+Remove-Item -Recurse -Force $installPath
+Write-Host "netscanner uninstalled successfully."
 ```
 
-#### Linux
+#### Linux and macOS
 
 ```bash
-rm -f "$HOME/.local/bin/netscanner" && sed -i '/.local\/bin/d' "$HOME/.bashrc" && echo "netscanner uninstalled successfully. Restart your terminal to apply changes."
+rm -f "$HOME/.local/bin/netscanner"
+for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+  [ -f "$rc" ] && sed -i.bak '/# added by netscanner installer/d' "$rc" && rm -f "$rc.bak"
+done
+echo "netscanner uninstalled. Restart your terminal."
 ```
 
-#### macOS
+If you installed with an older version of the installer, also delete the `export PATH="$HOME/.local/bin:$PATH"` line from your shell rc file by hand.
 
-```bash
-rm -f "$HOME/.local/bin/netscanner" && sed -i '' '/.local\/bin/d' "$HOME/.zshrc" && echo "netscanner uninstalled successfully. Restart your terminal to apply changes."`
-```
 ## Notes
 
 - On some systems, administrative rights may be needed to run the `arp` command or to ping successfully.
