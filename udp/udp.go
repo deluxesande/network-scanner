@@ -9,20 +9,13 @@ import (
 	"github.com/deluxesande/network-scanner/utils"
 )
 
-func identifyUdpService(port int) string {
-	// Check if the port is in the map
-	if service, exists := utils.UdpServices[port]; exists {
-		return service
-	}
-
-	// Return "Unknown" if the port is not in the map
-	return "Unknown"
-}
-
+// Shortcut: detects open ports only through the ICMP unreachable that a closed
+// port returns. Filtered hosts and services that ignore "ping" report nothing.
+// Add per-protocol probes (DNS for 53, NTP for 123) before trusting this output.
 func scanUdpPort(host string, port int, results chan<- int, wg *sync.WaitGroup) {
 	defer wg.Done() // Decrement the WaitGroup counter when the goroutine completes
 
-	address := host + ":" + strconv.Itoa(port)
+	address := net.JoinHostPort(host, strconv.Itoa(port))
 
 	conn, err := net.DialTimeout("udp", address, time.Second*1)
 
@@ -73,7 +66,10 @@ func ScanOpenUdpPorts(host string, startPort int, endPort int) map[int]string {
 	openPorts := make(map[int]string)
 
 	for result := range results {
-		service := identifyUdpService(result)
+		service, exists := utils.UdpServices[result]
+		if !exists {
+			service = "Unknown"
+		}
 		openPorts[result] = service
 	}
 
