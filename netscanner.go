@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"fmt"
+	"os"
+	"os/signal"
 	"strings"
-	"sync"
+	"time"
 
 	"github.com/deluxesande/network-scanner/netscanner/ping"
 	netscanner "github.com/deluxesande/network-scanner/netscanner/utils"
@@ -13,119 +17,109 @@ import (
 	"github.com/fatih/color"
 )
 
-func subnet_scan(chosen []string) []utils.Device {
-	color.Green("\n🌐 Scanning selected subnet(s)...\n")
-	var wg sync.WaitGroup
-	results := make(chan utils.Device, 1024)
-
-	for _, subnetChoice := range chosen {
-		wg.Add(1)
-		go subnet.ScanSubnet(subnetChoice, &wg, results)
+func main() {
+	if err := run(); err != nil {
+		color.Red("❌ %s", err)
+		os.Exit(1)
 	}
-
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	var devices []utils.Device
-	for device := range results {
-		devices = append(devices, device)
-	}
-
-	// Attach MACs
-	color.Yellow("\n🔄 Retrieving MAC addresses...")
-	macTable := subnet.GetMacTable()
-	for i := range devices {
-		if mac, ok := macTable[devices[i].IP]; ok {
-			devices[i].MAC = mac
-		}
-	}
-
-	return devices
 }
 
-func main() {
-	help := flag.Bool("h", false, "Show help message")
+func run() error {
 	subnetFlag := flag.String("subnet", "", "Comma-separated list of subnets to scan (e.g., 192.168.1.0/24,10.0.0.0/24)")
-	credits := flag.Bool("credit", false, "Show program credits")
+	credits := flag.Bool("credits", false, "Show program credits")
 	output := flag.String("output", "", "Output file for JSON results")
 	openTcp := flag.Bool("tcp", false, "Scan for open TCP ports (default: false)")
 	openUdp := flag.Bool("udp", false, "Scan for open UDP ports (default: false)")
 	version := flag.Bool("version", false, "Show version information")
-	ipaddr := flag.Bool("ip", false, "Get IP address of a website (e.g., --ip google.com)")
+	ipaddr := flag.String("ip", "", "Resolve a website to its IP address (e.g., --ip google.com)")
+	concurrency := flag.Int("concurrency", 100, "Hosts probed in parallel")
+	timeout := flag.Duration("timeout", time.Second, "Per-host probe timeout")
+	noDNS := flag.Bool("no-dns", false, "Skip reverse DNS lookups")
+	force := flag.Bool("force", false, "Allow scanning non-private ranges")
 
+	flag.Usage = netscanner.DisplayHelp
 	flag.Parse()
 
-	var chosen []string
-
-	if *help {
-		netscanner.DisplayHelp()
-		return
-	}
-
+	// 1. Informational flags
 	if *credits {
 		netscanner.DisplayCredits()
-		return
+		return nil
 	}
-
 	if *version {
 		netscanner.DisplayVersion()
-		return
+		return nil
 	}
 
-	if *openTcp && *openUdp {
-		// Run both TCP and UDP scans if both flags are provided
-		netscanner.ScanTcp()
-		netscanner.ScanUdp()
-		return // Terminate the program after running both scans
-	}
-
+	// 2. Port and resolve modes read the positional host/start/end args
 	if *openTcp {
-		netscanner.ScanTcp()
-		if flag.NFlag() == 1 { // Check if --tcp is the only flag provided
-			return
+		if err := netscanner.ScanTcp(); err != nil {
+			return err
 		}
 	}
-
 	if *openUdp {
-		netscanner.ScanUdp()
-		if flag.NFlag() == 1 { // Check if --udp is the only flag provided
-			return
+		if err := netscanner.ScanUdp(); err != nil {
+			return err
 		}
 	}
-
-	if *ipaddr {
-		ip, err := ping.GetIpAddress()
+	if *ipaddr != "" {
+		ip, err := ping.GetIpAddress(*ipaddr)
 		if err != nil {
-			color.Red(err.Error())
-		} else {
-			color.Green("✅ Found IP: %s", ip)
+			return err
 		}
-		if flag.NFlag() == 1 { // Check if --ip is the only flag provided
-			return
-		}
+		color.Green("✅ Found IP: %s", ip)
 	}
 
-	// Determine subnets to scan
+	// 3. Sweep subnets only when no mode flag was used, or --subnet was given
+	if *subnetFlag == "" && (*openTcp || *openUdp || *ipaddr != "") {
+		return nil
+	}
+
+	var chosen []string
 	if *subnetFlag != "" {
 		chosen = strings.Split(*subnetFlag, ",")
 	} else {
 		color.Cyan("🔍 Detecting local subnets...")
-		subnets := subnet.GetLocalSubnets()
-		if len(subnets) == 0 {
-			color.Red("No subnets found.")
-			return
+		subnets, err := subnet.GetLocalSubnets()
+		if err != nil {
+			return err
 		}
-		chosen = subnet.AskSubnetChoice(subnets)
+		if len(subnets) == 0 {
+			return fmt.Errorf("no subnets found")
+		}
+
+		chosen, err = subnet.AskSubnetChoice(subnets)
+		if err != nil {
+			return err
+		}
 	}
 
-	devices := subnet_scan(chosen)
+	color.Green("\n🌐 Scanning selected subnet(s)...\n")
 
-	// Print results
+	// Intercepted here only: port scans and the picker keep default Ctrl-C behaviour
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	devices, err := subnet.ScanSubnets(ctx, chosen, utils.ScanOptions{
+		Concurrency: *concurrency,
+		Timeout:     *timeout,
+		ResolveDNS:  !*noDNS,
+		AllowPublic: *force,
+		OnProgress: func(done, total int) {
+			fmt.Printf("\r🔍 %d/%d hosts probed...", done, total)
+		},
+	})
+	fmt.Println()
+	if err != nil {
+		return err
+	}
+
 	netscanner.PrintResults(devices)
 
 	if *output != "" {
-		subnet.ExportToJSON(devices, *output)
+		if err := subnet.ExportToJSON(devices, *output); err != nil {
+			return err
+		}
+		color.Cyan("📁 Results saved to %s\n", *output)
 	}
+	return nil
 }
