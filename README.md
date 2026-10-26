@@ -20,21 +20,22 @@ A concurrent network scanner built with Go that detects active devices on your l
 
 1. Detects local network subnets by reading system network interfaces.
 2. Prompts user to select subnet(s) or scan all.
-3. Pings IPs within selected subnet(s) concurrently.
-4. Parses TTL from ping response to estimate OS.
+3. Pings every host in the selected subnet(s) concurrently.
+4. Parses TTL from ping response to estimate OS, including how many hops away it is.
 5. Resolves hostname via reverse DNS lookup.
-6. Fetches MAC addresses from ARP table.
+6. Merges the ARP cache, so hosts that drop ICMP still appear with their MAC address.
 7. **Scans specified ports to detect open services.**
 8. Displays results and exports to JSON.
 
 ## Prerequisites
 
 - A machine connected to a local network (Wi-Fi or Ethernet). Internet access is not needed to scan.
-- `ping` and `arp` must be available on your PATH. On minimal Linux installs:
-  - Debian/Ubuntu: `sudo apt install iputils-ping net-tools`
-  - Fedora: `sudo dnf install iputils net-tools`
+- `ping` must be available on your PATH. On minimal Linux installs:
+  - Debian/Ubuntu: `sudo apt install iputils-ping`
+  - Fedora: `sudo dnf install iputils`
+  - macOS and Windows ship `ping` already.
 - Go 1.24 or newer, only if you build from source.
-- Administrator/root rights may be needed on some systems to use `arp` or `ping`.
+- Administrator/root rights may be needed on some systems to use `ping`.
 
 ## Help and Usage
 
@@ -54,6 +55,11 @@ Options:
   --udp HOST STARTPORT ENDPORT
                     Scan for open UDP ports on a specific host
   --ip WEBSITE      Resolve the IP address of a website (e.g., google.com)
+  --concurrency N   Hosts probed in parallel (default: 100)
+  --timeout DURATION
+                    Per-host probe timeout (default: 1s)
+  --no-dns          Skip reverse DNS lookups
+  --force           Allow scanning non-private ranges
   --credits         Display program credits and exit
 ```
 
@@ -105,16 +111,15 @@ Enter choice (e.g. 0 or 1,2): 1
 
 🌐 Scanning selected subnet(s)...
 
-🔄 Retrieving MAC addresses...
-
+🔍 254/254 hosts probed...
 📋 Active Devices Found:
--------------------------------------------------------------------
-IP Address       Hostname                       OS              MAC Address       
--------------------------------------------------------------------
-192.168.1.1      router.local                   Windows         00:11:22:33:44:55
-192.168.1.10     device1.local                  Linux/macOS     AA:BB:CC:DD:EE:FF
-192.168.1.25                                     Windows         11:22:33:44:55:66
--------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------
+IP Address       Hostname                   OS                                         MAC Address
+--------------------------------------------------------------------------------------------------------
+192.168.1.1      router.local               Linux/macOS/iOS/Android/BSD (~1 hop)       00:11:22:33:44:55
+192.168.1.10     device1.local              Linux/macOS/iOS/Android/BSD                AA:BB:CC:DD:EE:FF
+192.168.1.25                                Windows NT and later                       11:22:33:44:55:66
+--------------------------------------------------------------------------------------------------------
 ✅ Done. 3 device(s) detected.
 
 📁 Results saved to results.json
@@ -147,13 +152,18 @@ package main
 
 import (
     "fmt"
+    "log"
 
     "github.com/deluxesande/network-scanner/subnet"
     "github.com/deluxesande/network-scanner/tcp"
 )
 
 func main() {
-    fmt.Println(subnet.GetLocalSubnets())
+    subnets, err := subnet.GetLocalSubnets()
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println(subnets)
     fmt.Println(tcp.ScanOpenTcpPorts("192.168.1.10", 80, 100))
 }
 ```
@@ -219,9 +229,10 @@ If you installed with an older version of the installer, also delete the `export
 ## Notes
 
 - On some systems, administrative rights may be needed to run the `arp` command or to ping successfully.
-- Estimated OS is based on common TTL values but might not always be accurate.
+- Estimated OS is based on initial TTL values; lower TTLs are reported with an approximate hop count.
 - Hostnames may be empty if reverse DNS is not set up on the network.
-- The scanner pings IPs from `.1` to `.254` in the subnet.
+- The scanner sweeps every usable host in the subnet, and merges the ARP cache so hosts that drop ICMP still appear.
+- Ranges outside RFC1918 need `--force`. Anything wider than a `/16` is refused.
 
 ## Contributing
 
