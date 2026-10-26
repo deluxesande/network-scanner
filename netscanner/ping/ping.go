@@ -1,26 +1,25 @@
 package ping
 
 import (
-	"flag"
 	"fmt"
 	"net"
-
-	"github.com/fatih/color"
 )
 
-func GetIpAddress() (string, error) {
-	args := flag.Args()
-
-	if len(args) < 1 {
-		return "", fmt.Errorf("%s", color.RedString("❌ Please provide a website to resolve its IP address"))
+func GetIpAddress(website string) (string, error) {
+	if website == "" {
+		return "", fmt.Errorf("please provide a website to resolve its IP address")
 	}
 
-	website := args[0]
-
 	ips, err := net.LookupIP(website)
-
 	if err != nil {
-		return "", fmt.Errorf("failed to resolve IP for website %s: %v", website, err)
+		return "", fmt.Errorf("failed to resolve %s: %w", website, err)
+	}
+
+	// Prefer IPv4; the rest of the scanner is IPv4 only
+	for _, ip := range ips {
+		if v4 := ip.To4(); v4 != nil {
+			return v4.String(), nil
+		}
 	}
 
 	if len(ips) > 0 {
