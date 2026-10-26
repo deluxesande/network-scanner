@@ -1,5 +1,7 @@
 package utils
 
+import "time"
+
 type Device struct {
 	IP       string `json:"ip"`
 	Hostname string `json:"hostname"`
@@ -10,6 +12,11 @@ type Device struct {
 type ServiceInfo struct {
 	Service string
 	Version string
+}
+
+type PortResult struct {
+	Port    int
+	Service ServiceInfo
 }
 
 var CommonPorts = map[int]string{
@@ -76,4 +83,12 @@ var UdpServices = map[int]string{
 	5355:  "LLMNR (Link-Local Multicast Name Resolution)",
 	5683:  "CoAP (Constrained Application Protocol)",
 	64738: "Mumble (Voice Chat)",
+}
+
+type ScanOptions struct {
+	Concurrency int
+	Timeout     time.Duration
+	ResolveDNS  bool
+	AllowPublic bool
+	OnProgress  func(done, total int)
 }
